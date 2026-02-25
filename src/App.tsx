@@ -716,7 +716,7 @@ export function App() {
               </Section>
 
               <div className="credit">
-                Designed + Engineered by <a href="https://x.com/wwwcolorcolor" target="_blank" rel="noopener noreferrer">Ocean Akira</a>
+                Designed + Engineered by <a href="https://x.com/wwwcolorcolor" target="_blank" rel="noopener noreferrer">@wwwcolorcolor</a>
               </div>
             </div>
           )}
