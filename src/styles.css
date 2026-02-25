@@ -28,7 +28,7 @@ body {
   color: var(--text);
   min-height: 100vh;
   text-transform: uppercase;
-  animation: fadeIn 350ms cubic-bezier(0, 0, 0.2, 1);
+  animation: fadeIn 1s ease-out 0.3s both;
 }
 
 button, input, select {
@@ -723,8 +723,6 @@ textarea {
   background:
     linear-gradient(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.35)),
     repeating-conic-gradient(#d5d4cf 0% 25%, #eae9e5 0% 50%) 0 0 / 16px 16px;
-  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .qr-container::before {
@@ -747,9 +745,12 @@ textarea {
   z-index: 1;
 }
 
-.qr-container.fading {
+.qr-canvas {
+  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.qr-canvas.fading {
   opacity: 0;
-  transform: scale(0.97);
 }
 
 .download-row {

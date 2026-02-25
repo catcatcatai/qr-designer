@@ -217,24 +217,44 @@ export function App() {
   // Only depend on values that affect QR rendering (not bgEnabled/bgColor).
   const { data, dotType, dotColor, eyeType, eyeDotType, eyeColor, ecLevel, logoMargin, logoSize } = config;
   const updateTimer = useRef<ReturnType<typeof setTimeout>>(null);
+  // Track previous discrete style values to detect style-type changes
+  const prevStyles = useRef({ dotType, eyeType, eyeDotType, ecLevel });
+  const isFirstRender = useRef(true);
   useEffect(() => {
     if (updateTimer.current) clearTimeout(updateTimer.current);
-    updateTimer.current = setTimeout(() => {
-      qrCode.current?.update({
-        data: data || "https://example.com",
-        dotsOptions: { type: dotType, color: dotColor },
-        cornersSquareOptions: { type: eyeType, color: eyeColor },
-        cornersDotOptions: { type: eyeDotType, color: eyeColor },
-        backgroundOptions: { color: "transparent" },
-        qrOptions: { errorCorrectionLevel: ecLevel },
-        imageOptions: {
-          crossOrigin: "anonymous",
-          margin: logoMargin,
-          imageSize: logoSize,
-        },
-        image: logoCropped,
-      });
-    }, 80);
+    const updateOpts = {
+      data: data || "https://example.com",
+      dotsOptions: { type: dotType, color: dotColor },
+      cornersSquareOptions: { type: eyeType, color: eyeColor },
+      cornersDotOptions: { type: eyeDotType, color: eyeColor },
+      backgroundOptions: { color: "transparent" },
+      qrOptions: { errorCorrectionLevel: ecLevel },
+      imageOptions: {
+        crossOrigin: "anonymous",
+        margin: logoMargin,
+        imageSize: logoSize,
+      },
+      image: logoCropped,
+    };
+    const prev = prevStyles.current;
+    const styleChanged = prev.dotType !== dotType || prev.eyeType !== eyeType
+      || prev.eyeDotType !== eyeDotType || prev.ecLevel !== ecLevel;
+    prevStyles.current = { dotType, eyeType, eyeDotType, ecLevel };
+
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      updateTimer.current = setTimeout(() => qrCode.current?.update(updateOpts), 80);
+    } else if (styleChanged) {
+      // Discrete style change — crossfade
+      setQrFade(false);
+      updateTimer.current = setTimeout(() => {
+        qrCode.current?.update(updateOpts);
+        setTimeout(() => setQrFade(true), 30);
+      }, 150);
+    } else {
+      // Continuous change (sliders, data, colors) — debounced instant update
+      updateTimer.current = setTimeout(() => qrCode.current?.update(updateOpts), 80);
+    }
     return () => {
       if (updateTimer.current) clearTimeout(updateTimer.current);
     };
@@ -696,7 +716,7 @@ export function App() {
               </Section>
 
               <div className="credit">
-                Designed + Engineered by <a href="https://x.com/wwwcolorcolor" target="_blank" rel="noopener noreferrer">@wwwcolorcolor</a>
+                Designed + Engineered by <a href="https://x.com/wwwcolorcolor" target="_blank" rel="noopener noreferrer">Ocean Akira</a>
               </div>
             </div>
           )}
@@ -706,10 +726,10 @@ export function App() {
       <div className="preview">
         <div className="preview-center">
           <div
-            className={`qr-container ${qrFade ? "" : "fading"} ${!config.bgEnabled ? "transparent-bg" : ""}`}
+            className={`qr-container ${!config.bgEnabled ? "transparent-bg" : ""}`}
             style={{ "--qr-bg": config.bgEnabled ? config.bgColor : "#fff" } as React.CSSProperties}
           >
-            <div ref={qrRef} />
+            <div ref={qrRef} className={`qr-canvas ${qrFade ? "" : "fading"}`} />
           </div>
           <div className="download-row">
             <button onClick={() => download("png")}>Download PNG</button>
