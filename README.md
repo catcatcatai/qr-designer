@@ -19,7 +19,7 @@ A local-first QR code designer with live preview, logo embedding, and a personal
 ## Quick Start
 
 ```bash
-git clone https://github.com/wwwcolorcolor/qr-designer.git
+git clone https://github.com/catcatcatai/qr-designer.git
 cd qr-designer
 npm install
 npm run dev

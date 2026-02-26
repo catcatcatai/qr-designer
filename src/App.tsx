@@ -785,7 +785,7 @@ export function App() {
               </Section>
 
               <div className="credit">
-                Designed + Engineered by <a href="https://x.com/wwwcolorcolor" target="_blank" rel="noopener noreferrer">@wwwcolorcolor</a>
+                Designed + Engineered by <a href="https://catcatcat.ai" target="_blank" rel="noopener noreferrer"><strong>catcatcat</strong></a>
               </div>
             </div>
           )}
