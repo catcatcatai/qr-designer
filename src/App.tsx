@@ -4,6 +4,7 @@ import QRCodeStyling, {
   type CornerSquareType,
   type CornerDotType,
   type ErrorCorrectionLevel,
+  type TypeNumber,
 } from "qr-code-styling";
 import { LogoCropper, type CropState } from "./LogoCropper";
 
@@ -108,7 +109,7 @@ function generateThumbnail(config: QRConfig, logoCropped?: string): Promise<stri
       cornersSquareOptions: { type: config.eyeType, color: config.eyeColor },
       cornersDotOptions: { type: config.eyeDotType, color: config.eyeColor },
       backgroundOptions: { color: config.bgEnabled ? config.bgColor : "#ffffff" },
-      qrOptions: { errorCorrectionLevel: config.ecLevel },
+      qrOptions: { errorCorrectionLevel: config.ecLevel, typeNumber: config.qrVersion },
       imageOptions: {
         crossOrigin: "anonymous",
         margin: config.logoMargin,
@@ -135,6 +136,7 @@ interface QRConfig {
   bgEnabled: boolean;
   bgColor: string;
   ecLevel: ErrorCorrectionLevel;
+  qrVersion: TypeNumber;
   logoMargin: number;
   logoSize: number;
   logoBorderRadius: number;
@@ -150,6 +152,7 @@ const DEFAULT_CONFIG: QRConfig = {
   bgEnabled: false,
   bgColor: "#ffffff",
   ecLevel: "H",
+  qrVersion: 0,
   logoMargin: 8,
   logoSize: 0.35,
   logoBorderRadius: 8,
@@ -167,6 +170,7 @@ export function App() {
   const [qrName, setQrName] = useState(() => nextDefaultName(loadLibrary()));
   const [editingName, setEditingName] = useState(false);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
+  const [detectedVersion, setDetectedVersion] = useState<number>(0);
   const [qrFade, setQrFade] = useState(true);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -198,7 +202,7 @@ export function App() {
       cornersSquareOptions: { type: config.eyeType, color: config.eyeColor },
       cornersDotOptions: { type: config.eyeDotType, color: config.eyeColor },
       backgroundOptions: { color: "transparent" },
-      qrOptions: { errorCorrectionLevel: config.ecLevel },
+      qrOptions: { errorCorrectionLevel: config.ecLevel, typeNumber: config.qrVersion },
       imageOptions: {
         crossOrigin: "anonymous",
         margin: config.logoMargin,
@@ -210,15 +214,19 @@ export function App() {
       qrRef.current.innerHTML = "";
       qrCode.current.append(qrRef.current);
     }
+    setTimeout(() => {
+      const mc = (qrCode.current as any)?._qr?.getModuleCount?.();
+      if (mc) setDetectedVersion((mc - 17) / 4);
+    }, 100);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Preview always renders transparent bg — the container CSS handles the visual background.
   // Only depend on values that affect QR rendering (not bgEnabled/bgColor).
-  const { data, dotType, dotColor, eyeType, eyeDotType, eyeColor, ecLevel, logoMargin, logoSize } = config;
+  const { data, dotType, dotColor, eyeType, eyeDotType, eyeColor, ecLevel, qrVersion, logoMargin, logoSize } = config;
   const updateTimer = useRef<ReturnType<typeof setTimeout>>(null);
   // Track previous discrete style values to detect style-type changes
-  const prevStyles = useRef({ dotType, eyeType, eyeDotType, ecLevel });
+  const prevStyles = useRef({ dotType, eyeType, eyeDotType, ecLevel, qrVersion });
   const isFirstRender = useRef(true);
   useEffect(() => {
     if (updateTimer.current) clearTimeout(updateTimer.current);
@@ -228,7 +236,7 @@ export function App() {
       cornersSquareOptions: { type: eyeType, color: eyeColor },
       cornersDotOptions: { type: eyeDotType, color: eyeColor },
       backgroundOptions: { color: "transparent" },
-      qrOptions: { errorCorrectionLevel: ecLevel },
+      qrOptions: { errorCorrectionLevel: ecLevel, typeNumber: qrVersion },
       imageOptions: {
         crossOrigin: "anonymous",
         margin: logoMargin,
@@ -238,27 +246,35 @@ export function App() {
     };
     const prev = prevStyles.current;
     const styleChanged = prev.dotType !== dotType || prev.eyeType !== eyeType
-      || prev.eyeDotType !== eyeDotType || prev.ecLevel !== ecLevel;
-    prevStyles.current = { dotType, eyeType, eyeDotType, ecLevel };
+      || prev.eyeDotType !== eyeDotType || prev.ecLevel !== ecLevel || prev.qrVersion !== qrVersion;
+    prevStyles.current = { dotType, eyeType, eyeDotType, ecLevel, qrVersion };
+
+    const detectVersion = () => {
+      setTimeout(() => {
+        const mc = (qrCode.current as any)?._qr?.getModuleCount?.();
+        if (mc) setDetectedVersion((mc - 17) / 4);
+      }, 100);
+    };
 
     if (isFirstRender.current) {
       isFirstRender.current = false;
-      updateTimer.current = setTimeout(() => qrCode.current?.update(updateOpts), 80);
+      updateTimer.current = setTimeout(() => { qrCode.current?.update(updateOpts); detectVersion(); }, 80);
     } else if (styleChanged) {
       // Discrete style change — crossfade
       setQrFade(false);
       updateTimer.current = setTimeout(() => {
         qrCode.current?.update(updateOpts);
+        detectVersion();
         setTimeout(() => setQrFade(true), 30);
       }, 150);
     } else {
       // Continuous change (sliders, data, colors) — debounced instant update
-      updateTimer.current = setTimeout(() => qrCode.current?.update(updateOpts), 80);
+      updateTimer.current = setTimeout(() => { qrCode.current?.update(updateOpts); detectVersion(); }, 80);
     }
     return () => {
       if (updateTimer.current) clearTimeout(updateTimer.current);
     };
-  }, [data, dotType, dotColor, eyeType, eyeDotType, eyeColor, ecLevel, logoMargin, logoSize, logoCropped]);
+  }, [data, dotType, dotColor, eyeType, eyeDotType, eyeColor, ecLevel, qrVersion, logoMargin, logoSize, logoCropped]);
 
   const handleLogoUpload = (file: File) => {
     const reader = new FileReader();
@@ -347,7 +363,7 @@ export function App() {
 
   const loadFromLibrary = (item: SavedQR) => {
     fadeQrAndDo(() => {
-      setConfig(item.config);
+      setConfig({ ...DEFAULT_CONFIG, ...item.config });
       setLogoCropState(item.logoCropState);
       setLogoRawSrc(item.logoRawSrc);
       setLogoCropped(item.logoCropped);
@@ -392,7 +408,7 @@ export function App() {
       cornersSquareOptions: { type: config.eyeType, color: config.eyeColor },
       cornersDotOptions: { type: config.eyeDotType, color: config.eyeColor },
       backgroundOptions: { color: config.bgEnabled ? config.bgColor : "transparent" },
-      qrOptions: { errorCorrectionLevel: config.ecLevel },
+      qrOptions: { errorCorrectionLevel: config.ecLevel, typeNumber: config.qrVersion },
       imageOptions: {
         crossOrigin: "anonymous",
         margin: Math.round(config.logoMargin * scale),
@@ -644,6 +660,39 @@ export function App() {
                       <span>{l.pct}</span>
                     </button>
                   ))}
+                </div>
+              </Section>
+
+              <Section title="QR Version">
+                <div className="version-control">
+                  <div className="version-toggle">
+                    <button
+                      className={config.qrVersion === 0 ? "active" : ""}
+                      onClick={() => set("qrVersion", 0 as TypeNumber)}
+                    >
+                      Auto
+                      {config.qrVersion === 0 && <span>v{detectedVersion}</span>}
+                    </button>
+                    <button
+                      className={config.qrVersion !== 0 ? "active" : ""}
+                      onClick={() => set("qrVersion", (detectedVersion || 4) as TypeNumber)}
+                    >
+                      Locked
+                      {config.qrVersion !== 0 && <span>v{config.qrVersion}</span>}
+                    </button>
+                  </div>
+                  {config.qrVersion !== 0 && (
+                    <div className="version-slider">
+                      <input
+                        type="range"
+                        min={1}
+                        max={40}
+                        value={config.qrVersion}
+                        onChange={(e) => set("qrVersion", Number(e.target.value) as TypeNumber)}
+                      />
+                      <span className="version-label">{(config.qrVersion - 1) * 4 + 21} x {(config.qrVersion - 1) * 4 + 21} modules</span>
+                    </div>
+                  )}
                 </div>
               </Section>
 
