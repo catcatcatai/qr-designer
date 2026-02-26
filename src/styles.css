@@ -405,24 +405,30 @@ textarea {
   color: var(--text-dim);
 }
 
-.library-item-delete {
+.library-item-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.library-item-action {
   background: none;
   border: none;
   color: var(--text-dim);
   cursor: pointer;
   font-size: 11px;
   padding: 4px 8px;
-  flex-shrink: 0;
   border-radius: 4px;
   opacity: 0;
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.library-item:hover .library-item-delete {
+.library-item:hover .library-item-action {
   opacity: 1;
 }
 
-.library-item-delete:hover {
+.library-item-action:hover {
   color: var(--text);
   background: rgba(0, 0, 0, 0.06);
 }

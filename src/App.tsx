@@ -368,6 +368,16 @@ export function App() {
     }
   };
 
+  const duplicateFromLibrary = (item: SavedQR) => {
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const name = `${item.name} copy`;
+    const entry: SavedQR = { ...item, id, name, timestamp: Date.now() };
+    const updated = [entry, ...library];
+    setLibrary(updated);
+    saveLibrary(updated);
+    loadFromLibrary(entry);
+  };
+
   const PREVIEW_SIZE = 320;
   const EXPORT_SIZE = 1024;
 
@@ -381,7 +391,7 @@ export function App() {
       dotsOptions: { type: config.dotType, color: config.dotColor },
       cornersSquareOptions: { type: config.eyeType, color: config.eyeColor },
       cornersDotOptions: { type: config.eyeDotType, color: config.eyeColor },
-      backgroundOptions: config.bgEnabled ? { color: config.bgColor } : {},
+      backgroundOptions: { color: config.bgEnabled ? config.bgColor : "transparent" },
       qrOptions: { errorCorrectionLevel: config.ecLevel },
       imageOptions: {
         crossOrigin: "anonymous",
@@ -469,12 +479,22 @@ export function App() {
                           {new Date(item.timestamp).toLocaleDateString()}
                         </span>
                       </div>
-                      <button
-                        className="library-item-delete"
-                        onClick={(e) => { e.stopPropagation(); deleteFromLibrary(item.id); }}
-                      >
-                        x
-                      </button>
+                      <div className="library-item-actions">
+                        <button
+                          className="library-item-action"
+                          onClick={(e) => { e.stopPropagation(); duplicateFromLibrary(item); }}
+                          title="Duplicate"
+                        >
+                          dup
+                        </button>
+                        <button
+                          className="library-item-action library-item-delete"
+                          onClick={(e) => { e.stopPropagation(); deleteFromLibrary(item.id); }}
+                          title="Delete"
+                        >
+                          x
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
